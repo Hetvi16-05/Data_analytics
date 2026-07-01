@@ -325,6 +325,27 @@ Opens at: `http://localhost:8050`
 
 ---
 
+## 🚀 Deployment & Hosting
+
+### 1. Streamlit Community Cloud (Free)
+1. Push this repository to GitHub.
+2. Go to [share.streamlit.io](https://share.streamlit.io/) and log in with GitHub.
+3. Click **New app**.
+4. Select the repository, branch `main`, and set Main file path to `app.py`.
+5. Click **Deploy**.
+
+### 2. Docker (AWS / GCP / Local)
+This project includes a `Dockerfile` and `docker-compose.yml`.
+```bash
+docker-compose up --build
+```
+The app will run at `http://localhost:8501`.
+
+### 3. Heroku / Render
+This project includes a `Procfile` and `setup.sh` for easy deployment on Heroku or Render. Simply link your GitHub repo to their service, and they will detect the Python environment and run the setup automatically.
+
+---
+
 ## 💡 Key Insights
 
 - **Age** is the single strongest predictor — stroke risk rises sharply after 60
