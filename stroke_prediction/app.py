@@ -552,14 +552,18 @@ def main():
             # Violin plots
             st.subheader("3. Outlier and Distribution Analysis (Violin Plots)")
             col1, col2 = st.columns(2)
+            
+            # Use both int and string keys just in case seaborn casts the hue/x column to string
+            palette_dict = {0: '#2ecc71', 1: '#e74c3c', '0': '#2ecc71', '1': '#e74c3c'}
+            
             with col1:
                 fig_v1, ax_v1 = plt.subplots(figsize=(6, 5))
-                sns.violinplot(data=df_aa, x='stroke', y='age', palette={0: '#2ecc71', 1: '#e74c3c'}, inner="quartile", ax=ax_v1)
+                sns.violinplot(data=df_aa, x='stroke', y='age', palette=palette_dict, inner="quartile", ax=ax_v1)
                 ax_v1.set_title("Age vs Stroke (Violin)")
                 st.pyplot(fig_v1)
             with col2:
                 fig_v2, ax_v2 = plt.subplots(figsize=(6, 5))
-                sns.violinplot(data=df_aa, x='stroke', y='avg_glucose_level', palette={0: '#2ecc71', 1: '#e74c3c'}, inner="quartile", ax=ax_v2)
+                sns.violinplot(data=df_aa, x='stroke', y='avg_glucose_level', palette=palette_dict, inner="quartile", ax=ax_v2)
                 ax_v2.set_title("Glucose Level vs Stroke (Violin)")
                 st.pyplot(fig_v2)
 
