@@ -223,7 +223,7 @@ def main():
         predict_btn = st.button("🔍 Predict Stroke Risk", use_container_width=True)
 
     # ── TABS ───────────────────────────────────────────────────
-    tab1, tab2, tab3 = st.tabs(["🎯 Prediction", "📊 Data Analysis", "ℹ️ About"])
+    tab1, tab2, tab3, tab4 = st.tabs(["🎯 Prediction", "📊 Data Analysis", "ℹ️ About", "📈 Advanced Analytics"])
 
     # ── TAB 1: PREDICTION ──────────────────────────────────────
     with tab1:
@@ -502,6 +502,69 @@ def main():
         > It is NOT a substitute for professional medical diagnosis.
         > Always consult a qualified healthcare professional for medical advice.
         """)
+
+    # ── TAB 4: ADVANCED ANALYTICS ───────────────────────────────
+    with tab4:
+        try:
+            import seaborn as sns
+            import matplotlib.pyplot as plt
+            import numpy as np
+
+            df_aa = load_data()
+            st.markdown('<div class="section-header">📈 Advanced Statistical Analytics</div>', unsafe_allow_html=True)
+
+            # Feature Correlation
+            st.subheader("1. Feature Correlation Heatmap")
+            st.write("This heatmap shows how different numerical features correlate with each other. A higher magnitude (positive or negative) indicates a stronger relationship.")
+            
+            numeric_df = df_aa.select_dtypes(include=[np.number])
+            corr = numeric_df.corr()
+            
+            fig_corr, ax_corr = plt.subplots(figsize=(10, 8))
+            sns.heatmap(corr, annot=True, fmt=".2f", cmap="coolwarm", ax=ax_corr, vmin=-1, vmax=1)
+            st.pyplot(fig_corr)
+
+            st.markdown("---")
+
+            # KDE Plots
+            st.subheader("2. Density Distribution by Stroke Status")
+            st.write("Comparing the probability density of Age, BMI, and Glucose levels for patients with and without stroke.")
+            
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                fig_kde1, ax_kde1 = plt.subplots(figsize=(5, 4))
+                sns.kdeplot(data=df_aa, x='age', hue='stroke', fill=True, common_norm=False, palette={0: '#2ecc71', 1: '#e74c3c'}, ax=ax_kde1)
+                ax_kde1.set_title("Age Distribution")
+                st.pyplot(fig_kde1)
+            with col2:
+                fig_kde2, ax_kde2 = plt.subplots(figsize=(5, 4))
+                sns.kdeplot(data=df_aa.dropna(subset=['bmi']), x='bmi', hue='stroke', fill=True, common_norm=False, palette={0: '#2ecc71', 1: '#e74c3c'}, ax=ax_kde2)
+                ax_kde2.set_title("BMI Distribution")
+                st.pyplot(fig_kde2)
+            with col3:
+                fig_kde3, ax_kde3 = plt.subplots(figsize=(5, 4))
+                sns.kdeplot(data=df_aa, x='avg_glucose_level', hue='stroke', fill=True, common_norm=False, palette={0: '#2ecc71', 1: '#e74c3c'}, ax=ax_kde3)
+                ax_kde3.set_title("Glucose Distribution")
+                st.pyplot(fig_kde3)
+
+            st.markdown("---")
+
+            # Violin plots
+            st.subheader("3. Outlier and Distribution Analysis (Violin Plots)")
+            col1, col2 = st.columns(2)
+            with col1:
+                fig_v1, ax_v1 = plt.subplots(figsize=(6, 5))
+                sns.violinplot(data=df_aa, x='stroke', y='age', palette={0: '#2ecc71', 1: '#e74c3c'}, inner="quartile", ax=ax_v1)
+                ax_v1.set_title("Age vs Stroke (Violin)")
+                st.pyplot(fig_v1)
+            with col2:
+                fig_v2, ax_v2 = plt.subplots(figsize=(6, 5))
+                sns.violinplot(data=df_aa, x='stroke', y='avg_glucose_level', palette={0: '#2ecc71', 1: '#e74c3c'}, inner="quartile", ax=ax_v2)
+                ax_v2.set_title("Glucose Level vs Stroke (Violin)")
+                st.pyplot(fig_v2)
+
+        except Exception as e:
+            st.error(f"Error loading analytics: {e}")
 
 
 if __name__ == "__main__":
