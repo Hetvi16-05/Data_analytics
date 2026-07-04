@@ -384,65 +384,85 @@ def main():
     with tab2:
         try:
             df = load_data()
-            st.markdown('<div class="section-header">📊 Dataset Overview</div>',
-                        unsafe_allow_html=True)
+            df_chart = load_data()
 
-            col1, col2, col3, col4 = st.columns(4)
-            with col1:
-                st.metric("Total Patients", f"{len(df):,}")
-            with col2:
-                st.metric("Stroke Cases", f"{df['stroke'].sum():,}")
-            with col3:
-                st.metric("Stroke Rate", f"{df['stroke'].mean()*100:.1f}%")
-            with col4:
-                st.metric("Features", "11")
+            st.markdown('<div class="section-header">📊 Dataset Overview</div>', unsafe_allow_html=True)
 
-            st.markdown('<div class="section-header">🔥 Stroke by Age Group</div>',
-                        unsafe_allow_html=True)
-            df['age_bin'] = pd.cut(df['age'], bins=[0,20,40,60,80,100],
-                                   labels=['0-20','20-40','40-60','60-80','80+'])
-            age_stroke = df.groupby('age_bin', observed=True)['stroke'].mean() * 100
-            fig = px.bar(x=age_stroke.index.astype(str), y=age_stroke.values,
-                         labels={'x': 'Age Group', 'y': 'Stroke Rate (%)'},
-                         color=age_stroke.values, color_continuous_scale='Reds',
-                         title="Stroke Rate by Age Group")
-            fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0.3)',
-                               font={'color':'white'}, showlegend=False)
-            st.plotly_chart(fig, use_container_width=True)
-
-            col1, col2 = st.columns(2)
-            with col1:
-                st.markdown('<div class="section-header">🍬 Glucose Distribution</div>',
-                            unsafe_allow_html=True)
-                fig2 = px.histogram(df, x='avg_glucose_level', color='stroke',
-                                    color_discrete_map={0:'#2ecc71', 1:'#e74c3c'},
-                                    labels={'stroke':'Stroke', 'avg_glucose_level':'Glucose Level'},
-                                    title="Glucose Level Distribution", nbins=50, opacity=0.8)
-                fig2.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0.3)',
-                                   font={'color':'white'})
+            # --- KPIs ---
+            total_patients = len(df_chart)
+            avg_age = df_chart["age"].mean()
+            avg_bmi = df_chart["bmi"].mean()
+            stroke_cases = df_chart["stroke"].sum()
+            avg_glucose = df_chart["avg_glucose_level"].mean()
+            
+            c1, c2, c3, c4, c5 = st.columns(5)
+            c1.metric("Total Patients", f"{total_patients/1000:.3f}K" if total_patients >= 1000 else f"{total_patients}")
+            c2.metric("Average Age (Years)", f"{avg_age:.2f}")
+            c3.metric("Average BMI", f"{avg_bmi:.2f}")
+            c4.metric("Total Stroke Cases", f"{stroke_cases}")
+            c5.metric("Average Glucose Level", f"{avg_glucose:.2f}")
+            
+            st.markdown("---")
+            
+            # --- ROW 1 CHARTS ---
+            r1c1, r1c2, r1c3 = st.columns(3)
+            
+            with r1c1:
+                stroke_by_age = df_chart.groupby('age')['stroke'].sum().reset_index()
+                fig1 = px.bar(stroke_by_age, x='age', y='stroke', title="Stroke Cases by Age",
+                              labels={'age': 'age', 'stroke': 'Sum of stroke'}, color_discrete_sequence=['#0078D4'])
+                fig1.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', margin=dict(t=30, b=20, l=20, r=20))
+                st.plotly_chart(fig1, use_container_width=True)
+                
+            with r1c2:
+                df_rounded = df_chart.copy()
+                df_rounded['bmi_r'] = df_rounded['bmi'].round(0)
+                df_rounded['glucose_r'] = df_rounded['avg_glucose_level'].round(0)
+                grouped = df_rounded.groupby(['bmi_r', 'glucose_r']).agg(count=('stroke', 'size')).reset_index()
+                fig2 = px.scatter(grouped, x='bmi_r', y='glucose_r', size='count', title="BMI vs Average Glucose Level",
+                                  labels={'bmi_r': 'bmi', 'glucose_r': 'Average of avg_glucose_level'}, color_discrete_sequence=['#0078D4'])
+                fig2.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', margin=dict(t=30, b=20, l=20, r=20))
                 st.plotly_chart(fig2, use_container_width=True)
-
-            with col2:
-                st.markdown('<div class="section-header">⚖️ BMI Distribution</div>',
-                            unsafe_allow_html=True)
-                fig3 = px.histogram(df.dropna(subset=['bmi']), x='bmi', color='stroke',
-                                    color_discrete_map={0:'#2ecc71', 1:'#e74c3c'},
-                                    labels={'stroke':'Stroke', 'bmi':'BMI'},
-                                    title="BMI Distribution", nbins=50, opacity=0.8)
-                fig3.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0.3)',
-                                   font={'color':'white'})
+                
+            with r1c3:
+                trend = df_chart.groupby('age')['stroke'].count().reset_index()
+                fig3 = px.line(trend, x='age', y='stroke', title="Stroke Trend Across Age",
+                               labels={'age': 'age', 'stroke': 'Count of stroke'}, color_discrete_sequence=['#0078D4'])
+                fig3.update_traces(line=dict(width=3))
+                fig3.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', margin=dict(t=30, b=20, l=20, r=20))
                 st.plotly_chart(fig3, use_container_width=True)
-
-            st.markdown('<div class="section-header">🔍 Explore Raw Data</div>',
-                        unsafe_allow_html=True)
-            stroke_filter = st.selectbox("Filter by Stroke Status",
-                                          ["All Patients", "Stroke Cases Only", "Non-Stroke Only"])
-            display_df = df.copy()
-            if stroke_filter == "Stroke Cases Only":
-                display_df = df[df['stroke']==1]
-            elif stroke_filter == "Non-Stroke Only":
-                display_df = df[df['stroke']==0]
-            st.dataframe(display_df.head(100), use_container_width=True)
+                
+            # --- ROW 2 CHARTS ---
+            r2c1, r2c2, r2c3 = st.columns(3)
+            
+            with r2c1:
+                gender_counts = df_chart['gender'].value_counts().reset_index()
+                gender_counts.columns = ['gender', 'count']
+                gender_counts['gender'] = gender_counts['gender'].astype(str)
+                fig4 = px.pie(gender_counts, values='count', names='gender', hole=0.6, title="Stroke Distribution by Gender",
+                              color_discrete_sequence=['#0078D4', '#002050', '#83B4FF'])
+                fig4.update_traces(textinfo='value+percent')
+                fig4.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', margin=dict(t=30, b=20, l=20, r=20))
+                st.plotly_chart(fig4, use_container_width=True)
+                
+            with r2c2:
+                hyper_stroke = df_chart.groupby('hypertension')['stroke'].sum().reset_index()
+                hyper_stroke['hypertension'] = hyper_stroke['hypertension'].astype(str)
+                fig5 = px.bar(hyper_stroke, x='stroke', y='hypertension', orientation='h', title="Stroke Cases by Hypertension Status",
+                              labels={'hypertension': 'hypertension', 'stroke': 'Sum of stroke'}, color_discrete_sequence=['#0078D4'])
+                fig5.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', margin=dict(t=30, b=20, l=20, r=20))
+                st.plotly_chart(fig5, use_container_width=True)
+                
+            with r2c3:
+                stroke_df = df_chart[df_chart['stroke'] == 1].copy()
+                if not stroke_df.empty:
+                    stroke_df['age_bin'] = pd.cut(stroke_df['age'], bins=[0,40,60,80,100], labels=['0-40', '41-60', '61-80', '81+'])
+                    grouped_tree = stroke_df.groupby(['smoking_status', 'age_bin'], observed=False).size().reset_index(name='count')
+                    grouped_tree = grouped_tree[grouped_tree['count'] > 0]
+                    fig6 = px.sunburst(grouped_tree, path=['smoking_status', 'age_bin'], values='count', title="Stroke Risk Factor Analysis",
+                                       color_discrete_sequence=['#0078D4', '#5C9CE6', '#99C3F0', '#002050'])
+                    fig6.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', margin=dict(t=30, b=20, l=20, r=20))
+                    st.plotly_chart(fig6, use_container_width=True)
 
         except Exception as e:
             st.error(f"Could not load data: {e}")
