@@ -5,87 +5,103 @@ from dash import dcc, html
 import pandas as pd
 import numpy as np
 
-def create_age_stroke_chart(df: pd.DataFrame):
-    if df.empty:
-        return go.Figure()
-        
-    # Group by age and calculate stroke rate
-    # Let's create age bins for a better bar chart
-    bins = [0, 20, 30, 40, 50, 60, 70, 80, 100]
-    labels = ['0-20', '21-30', '31-40', '41-50', '51-60', '61-70', '71-80', '81+']
-    df_chart = df.copy()
-    df_chart['age_group'] = pd.cut(df_chart['age'], bins=bins, labels=labels, right=False)
+def _apply_clean_layout(fig):
+    fig.update_layout(
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        margin=dict(t=30, b=20, l=20, r=20),
+        xaxis=dict(showgrid=True, gridcolor='#eaeaea', zeroline=False),
+        yaxis=dict(showgrid=True, gridcolor='#eaeaea', zeroline=False)
+    )
+    return fig
+
+def create_stroke_by_age(df: pd.DataFrame):
+    if df.empty: return go.Figure()
+    # Sum of stroke by age
+    stroke_by_age = df.groupby('age')['stroke'].sum().reset_index()
+    fig = px.bar(
+        stroke_by_age, x='age', y='stroke',
+        title="Stroke Cases by Age",
+        labels={'age': 'age', 'stroke': 'Sum of stroke'},
+        color_discrete_sequence=['#0078D4']
+    )
+    return _apply_clean_layout(fig)
+
+def create_bmi_glucose(df: pd.DataFrame):
+    if df.empty: return go.Figure()
+    # Scatter of BMI vs glucose
+    df_rounded = df.copy()
+    df_rounded['bmi_r'] = df_rounded['bmi'].round(0)
+    df_rounded['glucose_r'] = df_rounded['avg_glucose_level'].round(0)
+    grouped = df_rounded.groupby(['bmi_r', 'glucose_r']).agg(count=('stroke', 'size')).reset_index()
     
-    age_stroke = df_chart.groupby('age_group', observed=False)['stroke'].mean().reset_index()
-    age_stroke['stroke'] = age_stroke['stroke'] * 100 # Convert to percentage
+    fig = px.scatter(
+        grouped, x='bmi_r', y='glucose_r', size='count',
+        title="BMI vs Average Glucose Level",
+        labels={'bmi_r': 'bmi', 'glucose_r': 'Average of avg_glucose_level'},
+        color_discrete_sequence=['#0078D4']
+    )
+    return _apply_clean_layout(fig)
+
+def create_stroke_trend(df: pd.DataFrame):
+    if df.empty: return go.Figure()
+    # Stroke Trend across age
+    trend = df.groupby('age')['stroke'].count().reset_index()
+    fig = px.line(
+        trend, x='age', y='stroke',
+        title="Stroke Trend Across Age",
+        labels={'age': 'age', 'stroke': 'Count of stroke'},
+        color_discrete_sequence=['#0078D4']
+    )
+    fig.update_traces(line=dict(width=3))
+    return _apply_clean_layout(fig)
+
+def create_gender_donut(df: pd.DataFrame):
+    if df.empty: return go.Figure()
+    # Gender (0 or 1).
+    gender_counts = df['gender'].value_counts().reset_index()
+    gender_counts.columns = ['gender', 'count']
+    gender_counts['gender'] = gender_counts['gender'].astype(str)
+    
+    fig = px.pie(
+        gender_counts, values='count', names='gender',
+        hole=0.6,
+        title="Stroke Distribution by Gender",
+        color_discrete_sequence=['#0078D4', '#002050', '#83B4FF']
+    )
+    fig.update_traces(textinfo='value+percent')
+    fig.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', margin=dict(t=30, b=20, l=20, r=20))
+    return fig
+
+def create_hypertension_bar(df: pd.DataFrame):
+    if df.empty: return go.Figure()
+    # Sum of stroke by hypertension
+    hyper_stroke = df.groupby('hypertension')['stroke'].sum().reset_index()
+    hyper_stroke['hypertension'] = hyper_stroke['hypertension'].astype(str)
     
     fig = px.bar(
-        age_stroke, 
-        x='age_group', 
-        y='stroke',
-        title="Stroke Rate by Age Group",
-        labels={'age_group': 'Age Group', 'stroke': 'Stroke Rate (%)'},
-        color_discrete_sequence=['#ef553b']
+        hyper_stroke, x='stroke', y='hypertension', orientation='h',
+        title="Stroke Cases by Hypertension Status",
+        labels={'hypertension': 'hypertension', 'stroke': 'Sum of stroke'},
+        color_discrete_sequence=['#0078D4']
     )
-    fig.update_layout(
-        plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor='rgba(0,0,0,0)',
-        margin=dict(t=40, b=20, l=20, r=20),
-        xaxis_title="Age Group",
-        yaxis_title="Stroke Rate (%)"
-    )
-    return fig
+    return _apply_clean_layout(fig)
 
-def create_glucose_dist_chart(df: pd.DataFrame):
-    if df.empty:
-        return go.Figure()
-        
-    fig = px.histogram(
-        df, 
-        x="avg_glucose_level", 
-        color="stroke",
-        barmode="overlay",
-        title="Glucose Distribution by Stroke Status",
-        labels={'avg_glucose_level': 'Average Glucose Level', 'stroke': 'Stroke'},
-        color_discrete_map={0: '#636efa', 1: '#ef553b'}
-    )
-    # Update legend labels
-    newnames = {'0': 'No Stroke', '1': 'Stroke'}
-    fig.for_each_trace(lambda t: t.update(name = newnames.get(t.name, t.name),
-                                      legendgroup = newnames.get(t.name, t.name),
-                                      hovertemplate = t.hovertemplate.replace(t.name, newnames.get(t.name, t.name))))
-
-    fig.update_layout(
-        plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor='rgba(0,0,0,0)',
-        margin=dict(t=40, b=20, l=20, r=20)
-    )
-    return fig
-
-def create_correlation_heatmap(df: pd.DataFrame):
-    if df.empty:
-        return go.Figure()
-        
-    # Select numeric columns
-    numeric_df = df.select_dtypes(include=[np.number])
-    if numeric_df.empty:
-        return go.Figure()
-        
-    corr = numeric_df.corr()
+def create_risk_tree(df: pd.DataFrame):
+    if df.empty: return go.Figure()
+    stroke_df = df[df['stroke'] == 1].copy()
+    if stroke_df.empty: return go.Figure()
     
-    fig = px.imshow(
-        corr,
-        text_auto=".2f",
-        aspect="auto",
-        title="Feature Correlation Heatmap",
-        color_continuous_scale="RdBu_r",
-        zmin=-1, zmax=1
+    stroke_df['age_bin'] = pd.cut(stroke_df['age'], bins=[0,40,60,80,100], labels=['0-40', '41-60', '61-80', '81+'])
+    grouped = stroke_df.groupby(['smoking_status', 'age_bin'], observed=False).size().reset_index(name='count')
+    grouped = grouped[grouped['count'] > 0]
+    
+    fig = px.sunburst(
+        grouped, path=['smoking_status', 'age_bin'], values='count',
+        title="Stroke Risk Factor Analysis",
+        color_discrete_sequence=['#0078D4', '#5C9CE6', '#99C3F0', '#002050']
     )
-    fig.update_layout(
-        plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor='rgba(0,0,0,0)',
-        margin=dict(t=40, b=20, l=20, r=20)
-    )
+    fig.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', margin=dict(t=30, b=20, l=20, r=20))
     return fig
 
 def render_charts():
@@ -95,23 +111,17 @@ def render_charts():
             html.Div(
                 className="chart-row",
                 children=[
-                    html.Div(
-                        className="chart-card",
-                        children=[dcc.Graph(id="age-stroke-chart")]
-                    ),
-                    html.Div(
-                        className="chart-card",
-                        children=[dcc.Graph(id="glucose-dist-chart")]
-                    )
+                    html.Div(className="chart-card", children=[dcc.Graph(id="chart-stroke-age")]),
+                    html.Div(className="chart-card", children=[dcc.Graph(id="chart-bmi-glucose")]),
+                    html.Div(className="chart-card", children=[dcc.Graph(id="chart-stroke-trend")]),
                 ]
             ),
             html.Div(
                 className="chart-row",
                 children=[
-                    html.Div(
-                        className="chart-card full-width",
-                        children=[dcc.Graph(id="correlation-heatmap")]
-                    )
+                    html.Div(className="chart-card", children=[dcc.Graph(id="chart-gender")]),
+                    html.Div(className="chart-card", children=[dcc.Graph(id="chart-hypertension")]),
+                    html.Div(className="chart-card", children=[dcc.Graph(id="chart-risk-tree")]),
                 ]
             )
         ]
