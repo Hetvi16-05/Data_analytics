@@ -133,6 +133,9 @@ def load_model():
 def load_data():
     df = pd.read_csv('../healthcare-dataset-stroke-data.csv')
     df['bmi'] = pd.to_numeric(df['bmi'], errors='coerce')
+    df = df[df['gender'] != 'Other']
+    df['gender'] = df['gender'].map({'Male': 1, 'Female': 0})
+    df['age'] = df['age'].astype(int)
     return df
 
 

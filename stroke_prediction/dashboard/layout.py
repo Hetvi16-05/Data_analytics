@@ -32,6 +32,8 @@ try:
     df['bmi'] = pd.to_numeric(df['bmi'].replace('N/A', pd.NA), errors='coerce')
     df['bmi'] = df['bmi'].fillna(df['bmi'].median())
     df = df[df['gender'] != 'Other']
+    df['gender'] = df['gender'].map({'Male': 1, 'Female': 0})
+    df['age'] = df['age'].astype(int)
 except Exception as e:
     print(f"Error loading data: {e}")
     df = pd.DataFrame()
