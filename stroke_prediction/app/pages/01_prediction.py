@@ -27,31 +27,35 @@ hero(
     note="⚠️ Educational purposes only — not a clinical diagnostic tool."
 )
 
-# ── Sidebar — Patient Input ────────────────────────────────────
-with st.sidebar:
+# ── Patient Input (Top instead of Sidebar) ─────────────────────
+with st.container():
     st.markdown("## 👤 Patient Details")
     st.markdown("---")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown("### 📋 Demographics")
+        gender       = st.selectbox("Gender", ["Male", "Female"])
+        age          = st.slider("Age (years)", 1, 82, 55)
+        ever_married = st.selectbox("Ever Married", ["Yes", "No"])
+        residence    = st.selectbox("Residence Type", ["Urban", "Rural"])
+        work_type    = st.selectbox("Work Type",
+                        ["Private", "Self-employed", "Govt_job", "children", "Never_worked"])
 
-    st.markdown("### 📋 Demographics")
-    gender       = st.selectbox("Gender", ["Male", "Female"])
-    age          = st.slider("Age (years)", 1, 82, 55)
-    ever_married = st.selectbox("Ever Married", ["Yes", "No"])
-    residence    = st.selectbox("Residence Type", ["Urban", "Rural"])
-    work_type    = st.selectbox("Work Type",
-                    ["Private", "Self-employed", "Govt_job", "children", "Never_worked"])
+    with col2:
+        st.markdown("### 🏥 Medical History")
+        hypertension  = st.selectbox("Hypertension", ["No", "Yes"])
+        heart_disease = st.selectbox("Heart Disease",  ["No", "Yes"])
+        smoking       = st.selectbox("Smoking Status",
+                        ["never smoked", "formerly smoked", "smokes", "Unknown"])
 
-    st.markdown("### 🏥 Medical History")
-    hypertension  = st.selectbox("Hypertension", ["No", "Yes"])
-    heart_disease = st.selectbox("Heart Disease",  ["No", "Yes"])
-    smoking       = st.selectbox("Smoking Status",
-                    ["never smoked", "formerly smoked", "smokes", "Unknown"])
-
-    st.markdown("### 🔬 Lab Values")
-    glucose = st.slider("Avg Glucose Level (mg/dL)", 50.0, 300.0, 105.0, 0.5)
-    bmi     = st.slider("BMI (Body Mass Index)",     10.0, 70.0,  27.0, 0.1)
-
-    st.markdown("---")
-    predict_btn = st.button("🔍 Predict Stroke Risk", use_container_width=True)
+    with col3:
+        st.markdown("### 🔬 Lab Values")
+        glucose = st.slider("Avg Glucose Level (mg/dL)", 50.0, 300.0, 105.0, 0.5)
+        bmi     = st.slider("BMI (Body Mass Index)",     10.0, 70.0,  27.0, 0.1)
+        st.markdown("---")
+        predict_btn = st.button("🔍 Predict Stroke Risk", use_container_width=True)
 
 # ── Compute live risk score ────────────────────────────────────
 risk_score = int(
@@ -195,7 +199,7 @@ if predict_btn:
 
 else:
     # ── Idle state — show risk factor guide ───────────────────
-    info_box("👈 <b>Fill in the patient details</b> in the sidebar, then click <b>Predict Stroke Risk</b>.")
+    info_box("☝️ <b>Fill in the patient details</b> above, then click <b>Predict Stroke Risk</b>.")
 
     section("🔑 Key Stroke Risk Factors")
     factors = [
