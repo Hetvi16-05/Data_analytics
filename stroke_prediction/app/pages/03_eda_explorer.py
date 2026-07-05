@@ -24,33 +24,40 @@ df_raw = load_data()
 hero("🔍 EDA Explorer",
      "Interactively explore the stroke dataset — filter, slice, and visualise any feature.")
 
-# ── Sidebar Filters ────────────────────────────────────────────
-with st.sidebar:
+# ── Top Filters ────────────────────────────────────────────
+with st.container():
     st.markdown("## 🎛️ Filters")
-    st.markdown("---")
 
-    age_range   = st.slider("Age Range", 0, 82, (0, 82))
-    gender_sel  = st.multiselect("Gender",
-                    df_raw['gender'].unique().tolist(),
-                    default=df_raw['gender'].unique().tolist())
-    stroke_sel  = st.multiselect("Stroke Status",
-                    [0, 1], default=[0, 1],
-                    format_func=lambda x: "Stroke" if x == 1 else "No Stroke")
-    work_sel    = st.multiselect("Work Type",
-                    df_raw['work_type'].unique().tolist(),
-                    default=df_raw['work_type'].unique().tolist())
-    smoke_sel   = st.multiselect("Smoking Status",
-                    df_raw['smoking_status'].unique().tolist(),
-                    default=df_raw['smoking_status'].unique().tolist())
-    gluc_range  = st.slider("Glucose Level (mg/dL)", 50.0, 300.0, (50.0, 300.0))
-    bmi_range   = st.slider("BMI Range", 10.0, 70.0, (10.0, 70.0))
+    f_col1, f_col2, f_col3 = st.columns(3)
+    with f_col1:
+        age_range   = st.slider("Age Range", 0, 82, (0, 82))
+        gender_sel  = st.multiselect("Gender",
+                        df_raw['gender'].unique().tolist(),
+                        default=df_raw['gender'].unique().tolist())
+        stroke_sel  = st.multiselect("Stroke Status",
+                        [0, 1], default=[0, 1],
+                        format_func=lambda x: "Stroke" if x == 1 else "No Stroke")
+    with f_col2:
+        work_sel    = st.multiselect("Work Type",
+                        df_raw['work_type'].unique().tolist(),
+                        default=df_raw['work_type'].unique().tolist())
+        smoke_sel   = st.multiselect("Smoking Status",
+                        df_raw['smoking_status'].unique().tolist(),
+                        default=df_raw['smoking_status'].unique().tolist())
+    with f_col3:
+        gluc_range  = st.slider("Glucose Level (mg/dL)", 50.0, 300.0, (50.0, 300.0))
+        bmi_range   = st.slider("BMI Range", 10.0, 70.0, (10.0, 70.0))
 
-    st.markdown("---")
     st.markdown("### 📊 Chart Options")
-    x_axis  = st.selectbox("X Axis", ['age', 'avg_glucose_level', 'bmi'])
-    y_axis  = st.selectbox("Y Axis", ['avg_glucose_level', 'bmi', 'age'])
-    color_by = st.selectbox("Color By",
-                ['stroke', 'gender', 'hypertension', 'heart_disease', 'smoking_status'])
+    c_col1, c_col2, c_col3 = st.columns(3)
+    with c_col1:
+        x_axis  = st.selectbox("X Axis", ['age', 'avg_glucose_level', 'bmi'])
+    with c_col2:
+        y_axis  = st.selectbox("Y Axis", ['avg_glucose_level', 'bmi', 'age'])
+    with c_col3:
+        color_by = st.selectbox("Color By",
+                    ['stroke', 'gender', 'hypertension', 'heart_disease', 'smoking_status'])
+    st.markdown("---")
 
 # ── Apply filters ──────────────────────────────────────────────
 df = df_raw.copy()
